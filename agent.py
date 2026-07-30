@@ -17,8 +17,8 @@ from xml.etree import ElementTree as ET
 
 # ─── CONFIG ─────────────────────────────────────────────
 EMAIL_SENDER = os.getenv("EMAIL_SENDER", "ahsan.firebase15@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "olvq jmzs ezly pdpu")
-EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "ahsan.firebase15@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "ayii exbv npyg rvyz")
+EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "ahsanfiaz46@gmail.com")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 
