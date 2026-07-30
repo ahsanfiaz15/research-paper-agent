@@ -1,0 +1,2 @@
+# No external packages needed — uses only Python stdlib!
+# But keeping this file for future extensions

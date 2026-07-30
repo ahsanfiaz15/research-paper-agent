@@ -1,0 +1,42 @@
+name: Daily Research Paper Agent
+
+on:
+  schedule:
+    # Runs every day at 9:00 AM UTC (adjust as needed)
+    - cron: '0 9 * * *'
+  workflow_dispatch:  # Manual trigger button
+
+jobs:
+  fetch-and-email:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Agent
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+        run: python agent.py
+
+      - name: Commit sent_papers.json (track which papers were sent)
+        run: |
+          git config --global user.name "Research Agent"
+          git config --global user.email "agent@github.com"
+          if [ -f sent_papers.json ]; then
+            git add sent_papers.json
+            git diff --cached --quiet || git commit -m "📚 Update sent papers log [$(date +%Y-%m-%d)]"
+            git push
+          fi
