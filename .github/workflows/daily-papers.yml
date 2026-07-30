@@ -2,9 +2,11 @@ name: Daily Research Paper Agent
 
 on:
   schedule:
-    # Runs every day at 9:00 AM UTC (adjust as needed)
     - cron: '0 9 * * *'
-  workflow_dispatch:  # Manual trigger button
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   fetch-and-email:
@@ -13,6 +15,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -31,12 +36,16 @@ jobs:
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
         run: python agent.py
 
-      - name: Commit sent_papers.json (track which papers were sent)
+      - name: Commit sent_papers.json
         run: |
           git config --global user.name "Research Agent"
           git config --global user.email "agent@github.com"
+
           if [ -f sent_papers.json ]; then
             git add sent_papers.json
-            git diff --cached --quiet || git commit -m "📚 Update sent papers log [$(date +%Y-%m-%d)]"
-            git push
+
+            if ! git diff --cached --quiet; then
+              git commit -m "Update sent papers log"
+              git push origin main
+            fi
           fi
