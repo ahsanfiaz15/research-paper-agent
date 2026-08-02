@@ -2,7 +2,7 @@
 """
 Research Paper Agent
 Fetches daily new papers from arXiv and PubMed related to Medical Images + Deep Learning
-and sends email digest.
+and sends email digest to multiple recipients.
 """
 
 import os
@@ -18,7 +18,8 @@ from xml.etree import ElementTree as ET
 # ─── CONFIG ─────────────────────────────────────────────
 EMAIL_SENDER = os.getenv("EMAIL_SENDER", "ahsan.firebase15@gmail.com")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "ayii exbv npyg rvyz")
-EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "ifrah6597@gmail.com")
+# Multiple recipients list
+EMAIL_RECIPIENTS = ["ahsanfiaz46@gmail.com", "ifrah6597@gmail.com"]
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 
@@ -106,11 +107,9 @@ def fetch_arxiv_papers():
 def fetch_pubmed_papers():
     papers = []
     try:
-        # Search query for PubMed: Medical Imaging + Deep Learning published recently
         term = '("medical imaging" OR "radiology" OR "mri" OR "ct scan") AND ("deep learning" OR "convolutional neural network" OR "transformer")'
         encoded_term = urllib.parse.quote(term)
         
-        # Step 1: Get recent IDs
         search_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={encoded_term}&retmax=15&sort=date&retmode=json"
         req = urllib.request.Request(search_url, headers={"User-Agent": "ResearchPaperAgent/1.0"})
         
@@ -121,7 +120,6 @@ def fetch_pubmed_papers():
         if not id_list:
             return papers
 
-        # Step 2: Fetch details for those IDs
         ids_str = ",".join(id_list)
         summary_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id={ids_str}&retmode=json"
         req_sum = urllib.request.Request(summary_url, headers={"User-Agent": "ResearchPaperAgent/1.0"})
@@ -227,30 +225,31 @@ def send_email(papers):
         </html>
         """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = EMAIL_RECIPIENT
-    msg.attach(MIMEText(html_body, "html"))
-
+    # Connect to SMTP server and send to all recipients
     with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
         server.starttls()
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_SENDER, EMAIL_RECIPIENT, msg.as_string())
+        
+        for recipient in EMAIL_RECIPIENTS:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = EMAIL_SENDER
+            msg["To"] = recipient
+            msg.attach(MIMEText(html_body, "html"))
+            
+            server.sendmail(EMAIL_SENDER, recipient, msg.as_string())
 
-    print(f"✅ Email sent. Total papers: {len(papers)}")
+    print(f"✅ Email sent to {', '.join(EMAIL_RECIPIENTS)}. Total papers: {len(papers)}")
 
 def main():
     print("🔍 Fetching latest papers from arXiv and PubMed...")
     sent_papers = load_sent_papers()
     
-    # Fetch from multiple platforms
     arxiv_papers = fetch_arxiv_papers()
     pubmed_papers = fetch_pubmed_papers()
     
     all_papers = arxiv_papers + pubmed_papers
 
-    # Filter out already sent
     new_papers = [p for p in all_papers if p["id"] not in sent_papers]
 
     if new_papers:
