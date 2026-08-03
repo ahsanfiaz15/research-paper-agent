@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Research Paper Agent
-Fetches daily new papers from arXiv and PubMed related to Medical Images + Deep Learning
-and sends email digest to multiple recipients.
+Research Paper Agent (Quantum Medical & Computer Vision Edition)
+Fetches daily new papers from arXiv and PubMed related to Quantum Computer Vision,
+Quantum Medical Imaging, and Quantum Machine Learning.
 """
 
 import os
@@ -19,17 +19,22 @@ from xml.etree import ElementTree as ET
 EMAIL_SENDER = os.getenv("EMAIL_SENDER", "ahsan.firebase15@gmail.com")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "ayii exbv npyg rvyz")
 # Multiple recipients list
-EMAIL_RECIPIENTS = ["ahsanfiaz46@gmail.com", "ifrah6597@gmail.com"]
+EMAIL_RECIPIENTS = ["ahsanfiaz46@gmail.com", "imab6597@gmail.com"]
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 
-# Search Keywords
-KEYWORDS = ["medical", "clinical", "radiology", "mri", "ct scan", "x-ray", "ultrasound", 
-            "pathology", "histology", "dermatology", "ophthalmology", "mammogram",
-            "deep learning", "neural network", "cnn", "transformer", "segmentation",
-            "classification", "detection", "diagnosis", "image analysis"]
+# Updated Keywords for Quantum Computer Vision & Quantum Medical Imaging
+KEYWORDS = [
+    # Medical & Imaging Keywords
+    "medical", "clinical", "radiology", "mri", "ct scan", "x-ray", "ultrasound", 
+    "pathology", "image analysis", "segmentation", "classification", "diagnosis",
+    # Quantum Keywords
+    "quantum", "quantum machine learning", "qml", "quantum computing", 
+    "quantum neural network", "qnn", "quantum circuit", "quantum image", 
+    "quantum computer vision", "qubit", "quantum state"
+]
 
-DATA_FILE = "sent_papers.json"
+DATA_FILE = "sent_quantum_papers.json"
 MAX_RESULTS = 30
 
 # ─── HELPERS ────────────────────────────────────────────
@@ -44,17 +49,27 @@ def save_sent_papers(paper_ids):
     with open(DATA_FILE, "w") as f:
         json.dump(list(paper_ids), f)
 
-def is_medical_deep_learning(title, summary):
+def is_quantum_medical_vision(title, summary):
     text = (title + " " + summary).lower()
-    medical_hit = any(kw in text for kw in KEYWORDS[:12])
-    dl_hit = any(kw in text for kw in KEYWORDS[12:])
-    return medical_hit and dl_hit
+    # Must contain at least one quantum-related keyword and one medical/vision-related keyword
+    quantum_hit = any(q_kw in text for kw in KEYWORDS[12:] for q_kw in [kw])
+    domain_hit = any(d_kw in text for kw in KEYWORDS[:12] for d_kw in [kw])
+    
+    # Alternatively, ensure "quantum" is explicitly present along with medical or vision terms
+    has_quantum = "quantum" in text or "qml" in text or "qubit" in text
+    has_medical_or_vision = any(term in text for term in [
+        "medical", "clinical", "radiology", "mri", "ct", "image", "vision", 
+        "segmentation", "classification", "pathology", "scan"
+    ])
+    
+    return has_quantum and has_medical_or_vision
 
-# 1. Fetch from arXiv
+# 1. Fetch from arXiv (Targeting Quant-Ph, CS.CV, CS.LG)
 def fetch_arxiv_papers():
     papers = []
     try:
-        arxiv_query = "cat:eess.IV OR cat:cs.CV OR cat:cs.LG"
+        # Searching across quantum physics, computer vision, and machine learning categories
+        arxiv_query = "cat:quant-ph OR cat:cs.CV OR cat:cs.LG"
         query = urllib.parse.quote(arxiv_query)
         url = f"http://export.arxiv.org/api/query?search_query={query}&start=0&max_results={MAX_RESULTS}&sortBy=submittedDate&sortOrder=descending"
 
@@ -64,7 +79,7 @@ def fetch_arxiv_papers():
 
         ns = {"atom": "http://www.w3.org/2005/Atom"}
         root = ET.fromstring(data)
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=30)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=48) # Extended window to catch recent quantum papers
 
         for entry in root.findall("atom:entry", ns):
             title = entry.find("atom:title", ns)
@@ -88,7 +103,7 @@ def fetch_arxiv_papers():
             authors = [a.text for a in entry.findall("atom:author/atom:name", ns)[:3]]
             author_str = ", ".join(authors) + (" et al." if len(entry.findall("atom:author/atom:name", ns)) > 3 else "")
 
-            if is_medical_deep_learning(title_text, summary_text):
+            if is_quantum_medical_vision(title_text, summary_text):
                 papers.append({
                     "id": paper_id,
                     "title": title_text,
@@ -103,11 +118,11 @@ def fetch_arxiv_papers():
     
     return papers
 
-# 2. Fetch from PubMed (NCBI API)
+# 2. Fetch from PubMed (NCBI API) - Focused on Quantum + Medical Imaging
 def fetch_pubmed_papers():
     papers = []
     try:
-        term = '("medical imaging" OR "radiology" OR "mri" OR "ct scan") AND ("deep learning" OR "convolutional neural network" OR "transformer")'
+        term = '("quantum computing" OR "quantum machine learning" OR "quantum image") AND ("medical imaging" OR "radiology" OR "mri" OR "image analysis")'
         encoded_term = urllib.parse.quote(term)
         
         search_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={encoded_term}&retmax=15&sort=date&retmode=json"
@@ -152,7 +167,7 @@ def fetch_pubmed_papers():
 
 def send_email(papers):
     if not papers:
-        subject = f"😴 Daily Medical DL Papers — No new papers today | {datetime.now().strftime('%b %d, %Y')}"
+        subject = f"😴 Quantum Medical Papers — No new papers today | {datetime.now().strftime('%b %d, %Y')}"
         html_body = f"""
         <html>
         <head>
@@ -167,20 +182,20 @@ def send_email(papers):
         </head>
         <body>
             <div class="container">
-                <h1>🔬 Research Paper Agent</h1>
-                <div class="subtitle">arXiv & PubMed Multi-Source Monitor | {datetime.now().strftime('%A, %B %d, %Y')}</div>
+                <h1>⚛️ Quantum Research Paper Agent</h1>
+                <div class="subtitle">Quantum Computer Vision & Medical Imaging Monitor | {datetime.now().strftime('%A, %B %d, %Y')}</div>
                 <div class="message">
-                    <strong>Status Update:</strong> Agent run successfully across sources, par aaj match honay walay koi naye papers publish nahi hue hain. System bilkul theek chal raha hai!
+                    <strong>Status Update:</strong> Agent run successfully, par aaj Quantum Computer Vision / Medical Imaging se munsalik koi naya paper publish nahi hua hai. System active hai!
                 </div>
                 <div class="footer">
-                    Sent by Research Paper Agent 🤖
+                    Sent by Quantum Research Paper Agent 🤖
                 </div>
             </div>
         </body>
         </html>
         """
     else:
-        subject = f"📄 Daily Medical DL Papers — {len(papers)} new paper(s) | {datetime.now().strftime('%b %d, %Y')}"
+        subject = f"⚛️ Quantum Medical/Vision Papers — {len(papers)} new paper(s) | {datetime.now().strftime('%b %d, %Y')}"
         html_body = f"""
         <html>
         <head>
@@ -189,19 +204,19 @@ def send_email(papers):
                 .container {{ max-width: 700px; margin: auto; background: #fff; border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }}
                 h1 {{ color: #1a237e; font-size: 22px; margin-bottom: 5px; }}
                 .subtitle {{ color: #666; font-size: 14px; margin-bottom: 25px; }}
-                .paper {{ border-left: 4px solid #3949ab; padding-left: 15px; margin-bottom: 25px; }}
-                .paper-title {{ font-size: 16px; font-weight: bold; color: #283593; margin-bottom: 5px; }}
+                .paper {{ border-left: 4px solid #673ab7; padding-left: 15px; margin-bottom: 25px; }}
+                .paper-title {{ font-size: 16px; font-weight: bold; color: #512da8; margin-bottom: 5px; }}
                 .paper-meta {{ font-size: 12px; color: #888; margin-bottom: 8px; }}
                 .paper-summary {{ font-size: 14px; color: #444; line-height: 1.5; }}
-                .paper-link {{ display: inline-block; margin-top: 8px; color: #fff; background: #3949ab; padding: 6px 14px; text-decoration: none; border-radius: 6px; font-size: 13px; }}
-                .badge {{ background: #e8eaf6; color: #3f51b5; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }}
+                .paper-link {{ display: inline-block; margin-top: 8px; color: #fff; background: #673ab7; padding: 6px 14px; text-decoration: none; border-radius: 6px; font-size: 13px; }}
+                .badge {{ background: #ede7f6; color: #512da8; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }}
                 .footer {{ margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; font-size: 12px; color: #999; text-align: center; }}
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>🔬 Research Paper Agent</h1>
-                <div class="subtitle">arXiv & PubMed Multi-Source Monitor | {datetime.now().strftime('%A, %B %d, %Y')}</div>
+                <h1>⚛️ Quantum Research Paper Agent</h1>
+                <div class="subtitle">Quantum Computer Vision & Medical Imaging Monitor | {datetime.now().strftime('%A, %B %d, %Y')}</div>
         """
 
         for p in papers:
@@ -218,14 +233,13 @@ def send_email(papers):
 
         html_body += f"""
                 <div class="footer">
-                    Sent by Research Paper Agent 🤖
+                    Sent by Quantum Research Paper Agent 🤖
                 </div>
             </div>
         </body>
         </html>
         """
 
-    # Connect to SMTP server and send to all recipients
     with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
         server.starttls()
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
@@ -242,7 +256,7 @@ def send_email(papers):
     print(f"✅ Email sent to {', '.join(EMAIL_RECIPIENTS)}. Total papers: {len(papers)}")
 
 def main():
-    print("🔍 Fetching latest papers from arXiv and PubMed...")
+    print("🔍 Fetching latest Quantum Medical & Computer Vision papers...")
     sent_papers = load_sent_papers()
     
     arxiv_papers = fetch_arxiv_papers()
